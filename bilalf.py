@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
 # ============================================================
 #  Sliced-Baton Scraper & Auto Adder (with confirmation gate)
-#
-#  Features:
-#   - API mode: each account takes its OWN positional window
-#   - API mode: already-used/failed users filtered inside window
-#   - Pending join requests no longer treated as success
-#   - msg None check ordered correctly
-#   - failure retry-counters are persisted
-#   - session load hardened against stale keys
+#  With Android/Termux Specific Device-Lock License System
 # ============================================================
 import sys
 import os
 import json
 import time
+import uuid
+import hashlib
+import platform
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from telethon.sync import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest, InviteToChannelRequest
@@ -51,6 +50,14 @@ DATABASE = 'accounts.json'
 SESSION_FILE = 'add_session.json'
 SESSIONS_DIR = 'sessions'
 
+# ====== SUPABASE CONFIG ======
+SUPABASE_URL = 'https://famjzltzlkrwmrabucqn.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWp6bHR6bGtyd21yYWJ1Y3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTcwOTYsImV4cCI6MjEwNjc5MzA5Nn0.k2RwT48cg3fIVml9PF9mymLgxIqYtbCUhwf6UxHNEAM'
+CUSTOMER_NAME = 'Default User' 
+ALLOW_OFFLINE_MODE = True 
+LOCAL_CACHE_FILE = '.lic_cache'
+
+# ====== BEHAVIOR CONFIG ======
 FLOODWAIT_THRESHOLD = 30       # FloodWait longer than this -> switch account
 PER_ACCOUNT_LIMIT = 50         # adds per account per run
 INTER_ACCOUNT_DELAY = 60       # cool-down between accounts
@@ -58,6 +65,137 @@ ADD_BUFFER = 15                # scrape extra users to absorb failures
 PEERFLOOD_TOLERANCE = 8        # stop account after this many PeerFlood errors
 MAX_GENERIC_FAILURES = 3       # retries before a user is marked failed
 MIN_API_MEMBERS = 20           # if API shows fewer, list is hidden -> also scan history
+
+
+# ============= SUPABASE DEVICE LOCK SYSTEM =============
+class SecurityLock:
+    @staticmethod
+    def get_hwid():
+        """
+        Generates a highly unique ID specifically for Android/Termux.
+        Uses multiple methods (Termux API, getprop) to prevent mixing devices.
+        """
+        android_id = ""
+        
+        # Method 1: Try Termux API (requires termux-api package installed on device)
+        try:
+            # Reads the device IMEI/Phone info
+            android_id = os.popen('termux-telephony-device 2>/dev/null | grep -i "id" | head -n 1').read().strip()
+        except Exception:
+            pass
+
+        # Method 2: Try Android Secure Settings (android_id)
+        if not android_id:
+            try:
+                android_id = os.popen('settings get secure android_id 2>/dev/null').read().strip()
+            except Exception:
+                pass
+
+        # Method 3: Try getprop for serial number
+        if not android_id or len(android_id) < 5:
+            try:
+                android_id = os.popen('getprop ro.serialno 2>/dev/null').read().strip()
+            except Exception:
+                pass
+
+        # Method 4: Fallback to Network MAC if everything else fails (extremely rare in Termux)
+        if not android_id or len(android_id) < 5:
+            android_id = str(uuid.getnode())
+
+        # Mix with hostname (device name) to guarantee uniqueness even on identical phone models
+        hostname = platform.node()
+        raw_id = f"{android_id}-{hostname}"
+        
+        # Hash it to make it clean and uniform
+        return hashlib.sha256(raw_id.encode()).hexdigest()
+
+    @staticmethod
+    def save_local_cache(hwid):
+        try:
+            salted = f"yonisalt_{hwid}_secure"
+            token = hashlib.sha256(salted.encode()).hexdigest()
+            with open(LOCAL_CACHE_FILE, 'w') as f:
+                f.write(token)
+        except Exception:
+            pass
+
+    @staticmethod
+    def verify_local_cache(hwid):
+        if not os.path.exists(LOCAL_CACHE_FILE):
+            return False
+        try:
+            with open(LOCAL_CACHE_FILE, 'r') as f:
+                token = f.read().strip()
+            salted = f"yonisalt_{hwid}_secure"
+            expected_token = hashlib.sha256(salted.encode()).hexdigest()
+            return token == expected_token
+        except Exception:
+            return False
+
+    @staticmethod
+    def check_license():
+        hwid = SecurityLock.get_hwid()
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json'
+        }
+
+        conflict_retries = 0  # Prevent infinite loop on 409 conflict
+        while True:
+            try:
+                check_url = f"{SUPABASE_URL}/rest/v1/licenses?select=status,name&hwid=eq.{hwid}"
+                req = urllib.request.Request(check_url, headers=headers)
+                response = urllib.request.urlopen(req, timeout=10)
+                data = json.loads(response.read().decode())
+                
+                if data:
+                    status = data[0].get('status', 'invalid')
+                    db_name = data[0].get('name', 'Unknown')
+                    if status == 'valid':
+                        ok(f'License Valid for: {_w}{db_name}')
+                        SecurityLock.save_local_cache(hwid)
+                        return True
+                    else:
+                        fail(f'License Revoked for {db_name}! Contact admin.')
+                        return False
+                else:
+                    info('First run detected. Registering device...')
+                    post_data = json.dumps({"hwid": hwid, "status": "valid", "name": CUSTOMER_NAME}).encode()
+                    post_req = urllib.request.Request(
+                        f"{SUPABASE_URL}/rest/v1/licenses",
+                        data=post_data, headers=headers, method='POST'
+                    )
+                    urllib.request.urlopen(post_req, timeout=10)
+                    ok(f'Device Successfully Registered to {CUSTOMER_NAME}!')
+                    SecurityLock.save_local_cache(hwid)
+                    time.sleep(1)
+                    return True
+                    
+            except urllib.error.HTTPError as e:
+                if e.code == 409:
+                    conflict_retries += 1
+                    if conflict_retries >= 3:
+                        fail("Failed to register device after 3 conflicts. Possible DB issue.")
+                        return False
+                    info('Device already registered. Verifying...')
+                    continue 
+                else:
+                    fail(f'License Server Error: {e.code}')
+                    return False
+                    
+            except Exception:
+                if ALLOW_OFFLINE_MODE and SecurityLock.verify_local_cache(hwid):
+                    warn('License server unreachable. Using offline verified mode.')
+                    return True
+                elif ALLOW_OFFLINE_MODE:
+                    fail('Network Error: Cannot reach license server.')
+                    info('This is your first run. You must connect to the internet at least once to verify.')
+                    info('Retrying in 10 seconds... (Press Ctrl+C to quit)')
+                    time.sleep(10)
+                else:
+                    fail('Network Error: Could not verify license.')
+                    return False
 
 
 # ============= BANNER =============
@@ -309,10 +447,6 @@ def unified_scrape(client, source_entity, msg_limit, target=0, offset_id=0, excl
     """
     Sliced-baton scraper.
     Returns (ordered_user_list, last_msg_id, api_mode)
-
-    If the API returns fewer than MIN_API_MEMBERS, the real member list
-    is probably hidden (only the owner is visible). Those few members are
-    KEPT and the history scan ALSO runs, then everything is merged.
     """
     members = {}
     hidden_ids = set()
@@ -463,6 +597,13 @@ def join_group(client, link, label, account_phone, account_name):
 def main():
     print_banner()
     line()
+    
+    # --- License Check ---
+    info('Checking License...')
+    if not SecurityLock.check_license():
+        fail("Access Denied. This script has not been authorized for this device.")
+        sys.exit(1)
+    line()
 
     accounts = load_accounts()
     if not accounts:
@@ -556,8 +697,8 @@ def main():
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, SESSION_FILE)
-        except Exception:
-            pass
+        except Exception as e:
+            fail(f"CRITICAL: Could not save session state! Error: {e}")
 
     added_total = 0
     skipped_total = 0
@@ -754,7 +895,6 @@ def main():
                     time.sleep(sleep_t)
 
             except PeerFloodError:
-                # Silent count only; switch account at the tolerance limit
                 peerflood_count += 1
                 failed_users.add(uo.id)
                 save_state()
@@ -779,14 +919,10 @@ def main():
                     stop_reason = 'floodwait'
                     break
                 time.sleep(e.seconds + 1)
-                # do NOT advance j -> retry the same user silently
 
             except Exception:
-                # Silent: count the failure, never spam the console
                 generic_fails[uo.id] = generic_fails.get(uo.id, 0) + 1
                 skipped_total += 1
-                # FIX #7: failures now count toward the save interval so retry
-                # counters survive a crash
                 save_counter += 1
                 if save_counter >= save_interval:
                     save_state()
@@ -797,7 +933,6 @@ def main():
         save_state()
         client.disconnect()
 
-        # Simple stop messages — no scary error text
         if stop_reason == 'peerflood':
             warn(f'{acct_name} stopped after adding {success} users. '
                  f'Account needs rest — moving to the next one.')
