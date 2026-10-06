@@ -53,7 +53,6 @@ SESSIONS_DIR = 'sessions'
 # ====== SUPABASE CONFIG ======
 SUPABASE_URL = 'https://famjzltzlkrwmrabucqn.supabase.co'
 SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWp6bHR6bGtyd21yYWJ1Y3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTcwOTYsImV4cCI6MjEwNjc5MzA5Nn0.k2RwT48cg3fIVml9PF9mymLgxIqYtbCUhwf6UxHNEAM'
-CUSTOMER_NAME = 'Default User' 
 ALLOW_OFFLINE_MODE = True 
 LOCAL_CACHE_FILE = '.lic_cache'
 
@@ -79,7 +78,6 @@ class SecurityLock:
         
         # Method 1: Try Termux API (requires termux-api package installed on device)
         try:
-            # Reads the device IMEI/Phone info
             android_id = os.popen('termux-telephony-device 2>/dev/null | grep -i "id" | head -n 1').read().strip()
         except Exception:
             pass
@@ -141,7 +139,6 @@ class SecurityLock:
             'Content-Type': 'application/json'
         }
 
-        conflict_retries = 0  # Prevent infinite loop on 409 conflict
         while True:
             try:
                 check_url = f"{SUPABASE_URL}/rest/v1/licenses?select=status,name&hwid=eq.{hwid}"
@@ -150,6 +147,7 @@ class SecurityLock:
                 data = json.loads(response.read().decode())
                 
                 if data:
+                    # Device IS in the database. Check its status.
                     status = data[0].get('status', 'invalid')
                     db_name = data[0].get('name', 'Unknown')
                     if status == 'valid':
@@ -160,25 +158,28 @@ class SecurityLock:
                         fail(f'License Revoked for {db_name}! Contact admin.')
                         return False
                 else:
-                    info('First run detected. Registering device...')
-                    post_data = json.dumps({"hwid": hwid, "status": "valid", "name": CUSTOMER_NAME}).encode()
+                    # Device IS NOT in the database. Register it.
+                    info('First run detected on this device. Registering...')
+                    input_name = input(f'{_in}{_cy} Enter your name to register this device: {_n}').strip()
+                    if not input_name:
+                        input_name = 'Unknown User'
+                        
+                    post_data = json.dumps({"hwid": hwid, "status": "valid", "name": input_name}).encode()
                     post_req = urllib.request.Request(
                         f"{SUPABASE_URL}/rest/v1/licenses",
                         data=post_data, headers=headers, method='POST'
                     )
                     urllib.request.urlopen(post_req, timeout=10)
-                    ok(f'Device Successfully Registered to {CUSTOMER_NAME}!')
+                    ok(f'Device Successfully Registered to {input_name}!')
                     SecurityLock.save_local_cache(hwid)
                     time.sleep(1)
-                    return True
+                    # Restart the loop to re-check the DB and pull the real status instead of faking it
+                    continue 
                     
             except urllib.error.HTTPError as e:
                 if e.code == 409:
-                    conflict_retries += 1
-                    if conflict_retries >= 3:
-                        fail("Failed to register device after 3 conflicts. Possible DB issue.")
-                        return False
-                    info('Device already registered. Verifying...')
+                    fail("Device already registered but failed to fetch status. Retrying...")
+                    time.sleep(2)
                     continue 
                 else:
                     fail(f'License Server Error: {e.code}')
