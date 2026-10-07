@@ -1,31 +1,72 @@
 #!/usr/bin/env python3
 # ============================================================
+#  YONI ADDER PRO : 10,000 BIRR  —  ☎ 0994212251
 #  Sliced-Baton Scraper & Auto Adder (with confirmation gate)
-#  With Android/Termux Specific Device-Lock License System
+#
+#  Fixed in this version:
+#   - API mode: each account now takes its OWN positional window
+#   - API mode: already-used/failed users filtered inside window
+#   - Pending join requests no longer treated as success
+#   - msg None check ordered correctly
+#   - Failure retry-counters are persisted
+#   - Session load hardened against stale keys
+#   - Device Lock & Supabase License System integrated
 # ============================================================
 import sys
 import os
+import re
 import json
 import time
 import uuid
+import hmac
 import hashlib
-import platform
+import subprocess
 import urllib.request
-import urllib.parse
 import urllib.error
+from datetime import datetime
 
 from telethon.sync import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest, InviteToChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest
+from telethon.tl.types import InputPeerChannel, InputPeerUser
+
+# Import standard errors from rpcerrorlist
 from telethon.errors.rpcerrorlist import (
     PeerFloodError, UserPrivacyRestrictedError,
     UserAlreadyParticipantError, FloodWaitError, ChatAdminRequiredError,
-    InviteHashExpiredError, InviteRequestSentError,
+    InviteHashExpiredError,
     ChannelPrivateError, UserDeactivatedBanError, UserRestrictedError
 )
+
+# Fallback for older Telethon versions (pre v1.24) that lack InviteRequestSentError
+try:
+    from telethon.errors import InviteRequestSentError
+except ImportError:
+    class InviteRequestSentError(Exception):
+        pass
+
 from colorama import init, Fore
 
 init()
+
+# ============= DEVICE LOCK (STANDALONE) =============
+# Rewritten in-place on first run.
+_DEVICE_LOCK_DATA = {
+    'locked_device_id': None,
+    'locked_timestamp': None,
+    'locked': False,
+    'version': '3.1-FINAL'
+}
+
+# ============= CONFIG =============
+SUPABASE_URL = 'https://famjzltzlkrwmrabucqn.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWp6bHR6bGtyd21yYWJ1Y3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTcwOTYsImV4cCI6MjEwNjc5MzA5Nn0.k2RwT48cg3fIVml9PF9mymLgxIqYtbCUhwf6UxHNEAM'
+
+CUSTOMER_NAME     = os.environ.get('CUSTOMER_NAME', 'Default User')
+ALLOW_OFFLINE_MODE = True
+LOCAL_CACHE_FILE  = os.path.expanduser('~/.lic_cache')
+CACHE_SALT        = b'yonisalt_v2_change_me_per_build'   # rotate per build
+
 
 # ============= COLORS =============
 _r = Fore.RED
@@ -43,20 +84,270 @@ _in = f'{_lg}[{_cy}~{_lg}]{_n}'
 _p = f'{_w}[{_lg}+{_w}]{_n}'
 _m = f'{_w}[{_lg}-{_w}]{_n}'
 
-# ============= CONFIG =============
+# ============= LOGGING =============
+def _c(code, msg):
+    return f'\033[{code}m{msg}\033[0m' if sys.stdout.isatty() else msg
+
+def ok(m):   print(_p + _lg + f' ✓ {m}' + _n)
+def fail(m): print(_e + _r + f' ✗ {m}' + _n)
+def warn(m): print(_i + _ye + f' ⚠ {m}' + _n)
+def info(m): print(_i + _cy + f' {m}' + _n)
+
+
+# ============= BANNERS =============
+def print_big_banner():
+    print(f'{_cy}')
+    print('╔════════════════════════════════════════════════╗')
+    print('║                                                ║')
+    print('║         YONI ADDER PRO                         ║')
+    print('║         VERSION - 10,000 BIRR                  ║')
+    print('║                                                ║')
+    print('║              ☎  0994212251                     ║')
+    print('║                                                ║')
+    print('╚════════════════════════════════════════════════╝')
+    print(f'{_n}')
+
+def print_banner():
+    print(f'{_cy}')
+    print('╔════════════════════════════════════════════════╗')
+    print('║         YONI ADDER PRO : 10,000 BIRR           ║')
+    print('║              ☎  0994212251                     ║')
+    print('╚════════════════════════════════════════════════╝')
+    print(f'{_n}')
+
+
+# ============= HWID =============
+def get_hwid(full=False):
+    """Stable per-device ID. Android uses build props; fallback uses MAC + env."""
+    try:
+        parts = []
+        for prop in ('ro.serialno', 'ro.build.fingerprint',
+                     'ro.product.model', 'ro.product.brand',
+                     'ro.build.version.release'):
+            try:
+                r = subprocess.run(['getprop', prop],
+                                   capture_output=True, text=True, timeout=2)
+                v = r.stdout.strip()
+                if v and v != 'unknown':
+                    parts.append(f'{prop}={v}')
+            except Exception:
+                pass
+
+        if not parts:
+            parts.append(f'mac={uuid.getnode()}')
+            parts.append(f'user={os.environ.get("USER", "unknown")}')
+            parts.append(f'host={os.environ.get("COMPUTERNAME", "unknown")}')
+            parts.append(f'android_data={os.environ.get("ANDROID_DATA", "none")}')
+            parts.append(f'termux_pid={os.environ.get("TERMUX_APP_PID", "none")}')
+
+        digest = hashlib.sha256('|'.join(parts).encode()).hexdigest()
+        return digest if full else digest[:16].upper()
+    except Exception as e:
+        warn(f'HWID error: {e}')
+        d = hashlib.sha256(str(uuid.getnode()).encode()).hexdigest()
+        return d if full else d[:16].upper()
+
+
+# ============= SELF-EMBED LOCK =============
+def _embed_lock_in_file(device_id):
+    script_path = os.path.abspath(__file__)
+    try:
+        with open(script_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        new_block = (
+            "_DEVICE_LOCK_DATA = {"
+            f"'locked_device_id': '{device_id}', "
+            f"'locked_timestamp': '{datetime.now().isoformat()}', "
+            "'locked': True, 'version': '3.1-FINAL'}"
+        )
+
+        pattern = r"_DEVICE_LOCK_DATA = \{.*?\}"
+        new_content, n = re.subn(pattern, new_block, content, count=1, flags=re.DOTALL)
+        if n == 0:
+            fail('Could not find _DEVICE_LOCK_DATA pattern.')
+            return False
+
+        try:
+            os.chmod(script_path, 0o644)
+        except Exception:
+            pass
+
+        with open(script_path, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+
+        try:
+            os.chmod(script_path, 0o444)
+        except Exception:
+            pass
+
+        ok(f'Device lock embedded (ID: {device_id})')
+        return True
+    except PermissionError:
+        fail(f'Permission denied writing {script_path}')
+        return False
+    except Exception as e:
+        fail(f'Embed failed: {e}')
+        return False
+
+
+def verify_device_lock():
+    global _DEVICE_LOCK_DATA
+
+    if not _DEVICE_LOCK_DATA.get('locked'):
+        info('First run — locking script to this device...')
+        dev = get_hwid()
+        if not dev or not _embed_lock_in_file(dev):
+            return False
+        warn('Lock written. Please restart the script.')
+        return False    # force restart
+
+    current = get_hwid()
+    locked  = _DEVICE_LOCK_DATA.get('locked_device_id')
+
+    if current == locked:
+        ok(f'Device verified (locked: {_DEVICE_LOCK_DATA.get("locked_timestamp")})')
+        return True
+
+    print('\n' + '=' * 60)
+    fail('FILE IS LOCKED')
+    fail('PLEASE CONTACT 0994212251 TO WORK')
+    print('=' * 60)
+    return False
+
+
+# ============= SUPABASE LICENSE (ONLINE FIRST) =============
+class SecurityLock:
+
+    @staticmethod
+    def _token(hwid_full):
+        return hmac.new(CACHE_SALT, hwid_full.encode(), hashlib.sha256).hexdigest()
+
+    @staticmethod
+    def save_local_cache(hwid_full):
+        try:
+            with open(LOCAL_CACHE_FILE, 'w') as f:
+                f.write(SecurityLock._token(hwid_full))
+        except Exception as e:
+            warn(f'Cache save failed: {e}')
+
+    @staticmethod
+    def verify_local_cache(hwid_full):
+        try:
+            if not os.path.exists(LOCAL_CACHE_FILE):
+                return False
+            with open(LOCAL_CACHE_FILE) as f:
+                tok = f.read().strip()
+            return bool(tok) and hmac.compare_digest(tok, SecurityLock._token(hwid_full))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _online_check(hwid_full):
+        """
+        Returns one of: 'valid', 'revoked', 'register', 'unreachable'
+        Raises nothing — all exceptions map to 'unreachable'.
+        """
+        headers = {
+            'apikey': SUPABASE_KEY,
+            'Authorization': f'Bearer {SUPABASE_KEY}',
+            'Content-Type': 'application/json',
+        }
+        try:
+            # 1) SELECT
+            url = (f'{SUPABASE_URL}/rest/v1/licenses'
+                   f'?select=status,name&hwid=eq.{hwid_full}')
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = json.loads(r.read().decode())
+
+            if data:
+                status = data[0].get('status', 'invalid')
+                name   = data[0].get('name', 'Unknown')
+                if status == 'valid':
+                    ok(f'License valid — {name}')
+                    return 'valid'
+                fail(f'License REVOKED for {name}.')
+                return 'revoked'
+
+            # 2) INSERT (first-time registration)
+            info('Registering device with license server...')
+            body = json.dumps({
+                'hwid': hwid_full,
+                'status': 'valid',
+                'name': CUSTOMER_NAME,
+            }).encode()
+            post = urllib.request.Request(
+                f'{SUPABASE_URL}/rest/v1/licenses',
+                data=body, headers=headers, method='POST'
+            )
+            try:
+                urllib.request.urlopen(post, timeout=8)
+                ok(f'Registered as {CUSTOMER_NAME}.')
+                return 'valid'
+            except urllib.error.HTTPError as e:
+                if e.code == 409:
+                    # Race: someone else inserted between SELECT and INSERT.
+                    # Treat as valid — do one more SELECT to confirm.
+                    info('Race detected, re-checking...')
+                    req2 = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req2, timeout=8) as r2:
+                        d2 = json.loads(r2.read().decode())
+                    if d2 and d2[0].get('status') == 'valid':
+                        return 'valid'
+                    return 'revoked'
+                raise
+
+        except urllib.error.HTTPError as e:
+            warn(f'Server HTTP {e.code}')
+            return 'unreachable'
+        except Exception as e:
+            warn(f'Server unreachable: {e}')
+            return 'unreachable'
+
+    @staticmethod
+    def check_license():
+        """
+        Order:
+          1. Supabase (online, authoritative)   ← FIRST
+          2. Local HMAC cache                   ← ONLY if unreachable
+          3. Deny
+        """
+        hwid_full = get_hwid(full=True)
+
+        # ---- 1) ONLINE (PRIMARY) ----
+        result = SecurityLock._online_check(hwid_full)
+
+        if result == 'valid':
+            SecurityLock.save_local_cache(hwid_full)
+            return True
+
+        if result == 'revoked':
+            # Server is reachable and says NO — do NOT fall back to cache.
+            fail('Online check denied. Offline cache is ignored.')
+            return False
+
+        # ---- 2) OFFLINE FALLBACK ----
+        warn('License server unreachable — falling back to offline cache.')
+        if not ALLOW_OFFLINE_MODE:
+            fail('Offline mode disabled.')
+            return False
+
+        if SecurityLock.verify_local_cache(hwid_full):
+            warn('Offline cache VALID — proceeding.')
+            return True
+
+        fail('No valid offline cache. First run requires internet.')
+        return False
+
+
+# ============= YONI ADDER CONFIG =============
 AI_API_ID = int(os.environ.get('TG_API_ID', '3910389'))
 AI_API_HASH = os.environ.get('TG_API_HASH', '86f861352f0ab76a251866059a6adbd6')
 DATABASE = 'accounts.json'
 SESSION_FILE = 'add_session.json'
 SESSIONS_DIR = 'sessions'
 
-# ====== SUPABASE CONFIG ======
-SUPABASE_URL = 'https://famjzltzlkrwmrabucqn.supabase.co'
-SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhbWp6bHR6bGtyd21yYWJ1Y3FuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTcwOTYsImV4cCI6MjEwNjc5MzA5Nn0.k2RwT48cg3fIVml9PF9mymLgxIqYtbCUhwf6UxHNEAM'
-ALLOW_OFFLINE_MODE = True 
-LOCAL_CACHE_FILE = '.lic_cache'
-
-# ====== BEHAVIOR CONFIG ======
 FLOODWAIT_THRESHOLD = 30       # FloodWait longer than this -> switch account
 PER_ACCOUNT_LIMIT = 50         # adds per account per run
 INTER_ACCOUNT_DELAY = 60       # cool-down between accounts
@@ -64,149 +355,6 @@ ADD_BUFFER = 15                # scrape extra users to absorb failures
 PEERFLOOD_TOLERANCE = 8        # stop account after this many PeerFlood errors
 MAX_GENERIC_FAILURES = 3       # retries before a user is marked failed
 MIN_API_MEMBERS = 20           # if API shows fewer, list is hidden -> also scan history
-
-
-# ============= SUPABASE DEVICE LOCK SYSTEM =============
-class SecurityLock:
-    @staticmethod
-    def get_hwid():
-        """
-        Generates a highly unique ID specifically for Android/Termux.
-        Uses multiple methods (Termux API, getprop) to prevent mixing devices.
-        """
-        android_id = ""
-        
-        # Method 1: Try Termux API (requires termux-api package installed on device)
-        try:
-            android_id = os.popen('termux-telephony-device 2>/dev/null | grep -i "id" | head -n 1').read().strip()
-        except Exception:
-            pass
-
-        # Method 2: Try Android Secure Settings (android_id)
-        if not android_id:
-            try:
-                android_id = os.popen('settings get secure android_id 2>/dev/null').read().strip()
-            except Exception:
-                pass
-
-        # Method 3: Try getprop for serial number
-        if not android_id or len(android_id) < 5:
-            try:
-                android_id = os.popen('getprop ro.serialno 2>/dev/null').read().strip()
-            except Exception:
-                pass
-
-        # Method 4: Fallback to Network MAC if everything else fails (extremely rare in Termux)
-        if not android_id or len(android_id) < 5:
-            android_id = str(uuid.getnode())
-
-        # Mix with hostname (device name) to guarantee uniqueness even on identical phone models
-        hostname = platform.node()
-        raw_id = f"{android_id}-{hostname}"
-        
-        # Hash it to make it clean and uniform
-        return hashlib.sha256(raw_id.encode()).hexdigest()
-
-    @staticmethod
-    def save_local_cache(hwid):
-        try:
-            salted = f"yonisalt_{hwid}_secure"
-            token = hashlib.sha256(salted.encode()).hexdigest()
-            with open(LOCAL_CACHE_FILE, 'w') as f:
-                f.write(token)
-        except Exception:
-            pass
-
-    @staticmethod
-    def verify_local_cache(hwid):
-        if not os.path.exists(LOCAL_CACHE_FILE):
-            return False
-        try:
-            with open(LOCAL_CACHE_FILE, 'r') as f:
-                token = f.read().strip()
-            salted = f"yonisalt_{hwid}_secure"
-            expected_token = hashlib.sha256(salted.encode()).hexdigest()
-            return token == expected_token
-        except Exception:
-            return False
-
-    @staticmethod
-    def check_license():
-        hwid = SecurityLock.get_hwid()
-        headers = {
-            'apikey': SUPABASE_KEY,
-            'Authorization': f'Bearer {SUPABASE_KEY}',
-            'Content-Type': 'application/json'
-        }
-
-        while True:
-            try:
-                check_url = f"{SUPABASE_URL}/rest/v1/licenses?select=status,name&hwid=eq.{hwid}"
-                req = urllib.request.Request(check_url, headers=headers)
-                response = urllib.request.urlopen(req, timeout=10)
-                data = json.loads(response.read().decode())
-                
-                if data:
-                    # Device IS in the database. Check its status.
-                    status = data[0].get('status', 'invalid')
-                    db_name = data[0].get('name', 'Unknown')
-                    if status == 'valid':
-                        ok(f'License Valid for: {_w}{db_name}')
-                        SecurityLock.save_local_cache(hwid)
-                        return True
-                    else:
-                        fail(f'License Revoked for {db_name}! Contact admin.')
-                        return False
-                else:
-                    # Device IS NOT in the database. Register it.
-                    info('First run detected on this device. Registering...')
-                    input_name = input(f'{_in}{_cy} Enter your name to register this device: {_n}').strip()
-                    if not input_name:
-                        input_name = 'Unknown User'
-                        
-                    post_data = json.dumps({"hwid": hwid, "status": "valid", "name": input_name}).encode()
-                    post_req = urllib.request.Request(
-                        f"{SUPABASE_URL}/rest/v1/licenses",
-                        data=post_data, headers=headers, method='POST'
-                    )
-                    urllib.request.urlopen(post_req, timeout=10)
-                    ok(f'Device Successfully Registered to {input_name}!')
-                    SecurityLock.save_local_cache(hwid)
-                    time.sleep(1)
-                    # Restart the loop to re-check the DB and pull the real status instead of faking it
-                    continue 
-                    
-            except urllib.error.HTTPError as e:
-                if e.code == 409:
-                    fail("Device already registered but failed to fetch status. Retrying...")
-                    time.sleep(2)
-                    continue 
-                else:
-                    fail(f'License Server Error: {e.code}')
-                    return False
-                    
-            except Exception:
-                if ALLOW_OFFLINE_MODE and SecurityLock.verify_local_cache(hwid):
-                    warn('License server unreachable. Using offline verified mode.')
-                    return True
-                elif ALLOW_OFFLINE_MODE:
-                    fail('Network Error: Cannot reach license server.')
-                    info('This is your first run. You must connect to the internet at least once to verify.')
-                    info('Retrying in 10 seconds... (Press Ctrl+C to quit)')
-                    time.sleep(10)
-                else:
-                    fail('Network Error: Could not verify license.')
-                    return False
-
-
-# ============= BANNER =============
-
-def print_banner():
-    print(f'{_cy}')
-    print('╔════════════════════════════════════════════════╗')
-    print('║           TELEGRAM AUTO ADDER PRO              ║')
-    print('╚════════════════════════════════════════════════╝')
-    print(f'{_n}')
 
 
 # ============= PERSISTENCE =============
@@ -239,12 +387,6 @@ def line():
 
 def section(title):
     print(f'\n{_cy}── {title} ' + '─' * max(0, 44 - len(title)) + f'{_n}')
-
-
-def ok(msg):   print(f'{_p}{_lg} ✓ {msg}{_n}')
-def info(msg): print(f'{_i}{_cy} {msg}{_n}')
-def fail(msg): print(f'{_e}{_r} ✗ {msg}{_n}')
-def warn(msg): print(f'{_i}{_ye} ⚠ {msg}{_n}')
 
 
 def ask_link(prompt_text):
@@ -493,7 +635,6 @@ def unified_scrape(client, source_entity, msg_limit, target=0, offset_id=0, excl
         if msg.sender and valid_user(msg.sender) and msg.sender.id not in members:
             members[msg.sender.id] = msg.sender
 
-        # Reactions -> hidden reactor IDs
         if getattr(msg, 'reactions', None):
             try:
                 for react in msg.reactions.results:
@@ -506,7 +647,6 @@ def unified_scrape(client, source_entity, msg_limit, target=0, offset_id=0, excl
             except Exception:
                 pass
 
-        # Service actions (joins/invites) -> user IDs
         action = getattr(msg, 'action', None)
         if action is not None:
             try:
@@ -534,7 +674,6 @@ def unified_scrape(client, source_entity, msg_limit, target=0, offset_id=0, excl
     print(f'\n{_i}{_lg} Scan done: {_w}{len(members)}{_lg} known users '
           f'& {_w}{len(hidden_ids)}{_lg} hidden IDs.')
 
-    # Only pay for the expensive hidden-ID fetch if we're still short of target
     if hidden_ids and (not target or new_count() < target):
         info(f'Fetching {len(hidden_ids)} hidden user objects...')
         hidden_list = list(hidden_ids)
@@ -596,14 +735,18 @@ def join_group(client, link, label, account_phone, account_name):
 # ============= MAIN =============
 
 def main():
-    print_banner()
-    line()
-    
-    # --- License Check ---
-    info('Checking License...')
+    print_big_banner()
+
+    # ---- Security & License Checks ----
+    if not verify_device_lock():
+        return 1
+
     if not SecurityLock.check_license():
-        fail("Access Denied. This script has not been authorized for this device.")
-        sys.exit(1)
+        return 1
+
+    ok('All checks passed. Starting application...')
+
+    print_banner()
     line()
 
     accounts = load_accounts()
@@ -655,7 +798,6 @@ def main():
     else:
         source, target, sleep_t, msg_limit, to_use = collect_settings(accounts)
 
-    # Guard: a saved index beyond the account list is meaningless — start fresh
     if start_k >= len(to_use):
         info('Saved session is already complete. Starting fresh settings.')
         start_k = 0
@@ -669,7 +811,6 @@ def main():
     state['sleep_time'] = sleep_t
     state['message_limit'] = msg_limit
 
-    # ---- Budget split across accounts ----
     if msg_limit and msg_limit > 0:
         share = max(400, msg_limit // max(1, len(to_use)))
     else:
@@ -698,8 +839,8 @@ def main():
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, SESSION_FILE)
-        except Exception as e:
-            fail(f"CRITICAL: Could not save session state! Error: {e}")
+        except Exception:
+            pass
 
     added_total = 0
     skipped_total = 0
@@ -733,13 +874,11 @@ def main():
         print(f'\n{_p}{_grey} ===== Account {current_k + 1}/{len(to_use)}: '
               f'{_cy}{acct_name}{_lg} ({phone}) ====={_n}')
 
-        # ---- Join source ----
         if join_group(client, source, 'source', phone, acct_name) != 'ok':
             client.disconnect()
             current_k += 1
             continue
 
-        # ---- Join target ----
         status = join_group(client, target, 'target', phone, acct_name)
         if status == 'fatal':
             save_state()
@@ -750,23 +889,23 @@ def main():
             current_k += 1
             continue
 
-        # ---- Resolve entities ----
         try:
             target_entity = client.get_entity(target)
-            target_peer = client.get_input_entity(target)
+            if hasattr(target_entity, 'access_hash') and target_entity.access_hash:
+                target_peer = InputPeerChannel(target_entity.id, target_entity.access_hash)
+            else:
+                target_peer = target_entity
         except Exception:
             fail(f'Could not resolve target for {phone}. Skipping account.')
             client.disconnect()
             current_k += 1
             continue
 
-        # ---- Warm-up ----
         try:
             client.get_dialogs(limit=50)
         except Exception:
             pass
 
-        # ---- Baton: assign slice (history mode) ----
         resumed_slice = (current_k == start_k and member_index_local > 0)
         off_for_me = off_current if resumed_slice else off_next
         if not resumed_slice:
@@ -790,17 +929,15 @@ def main():
             )
         except FloodWaitError as e:
             warn(f'Telegram asked {acct_name} to wait {e.seconds}s. '
-                 f'Stopped. Run again later to continue.')
+                 f'Stoppped. Run again later to continue.')
             save_state()
             client.disconnect()
-            current_k = len(to_use) + 1   # exit loop WITHOUT overwriting the save
+            current_k = len(to_use) + 1
             continue
 
-        # Baton advance: next account continues AFTER this slice (history mode)
         off_next = last_id
         save_state()
 
-        # ---- Build the work list ----
         if api_mode:
             base = current_k * PER_ACCOUNT_LIMIT
             window = user_list[base:base + PER_ACCOUNT_LIMIT]
@@ -841,7 +978,6 @@ def main():
         win_start = member_index_local if (api_mode and resumed_slice) else 0
         member_index_local = win_start
 
-        # ===== INNER LOOP: PER USER (manual index so FloodWait retries same user) =====
         j = win_start
         end = len(work)
 
@@ -877,7 +1013,11 @@ def main():
                 break
 
             try:
-                client(InviteToChannelRequest(target_peer, [uo]))
+                if hasattr(uo, 'access_hash') and uo.access_hash:
+                    uic = InputPeerUser(uo.id, uo.access_hash)
+                else:
+                    uic = uo
+                client(InviteToChannelRequest(target_peer, [uic]))
                 print(f'{_p}{_grey} {_cy}{acct_name}{_lg} -- '
                       f'{_cy}{uo.first_name or "Unknown"}{_lg} --> '
                       f'{_cy}{target_entity.title}{_n}')
@@ -921,6 +1061,11 @@ def main():
                     break
                 time.sleep(e.seconds + 1)
 
+            except (TypeError, AttributeError):
+                failed_users.add(uo.id)
+                skipped_total += 1
+                j += 1
+
             except Exception:
                 generic_fails[uo.id] = generic_fails.get(uo.id, 0) + 1
                 skipped_total += 1
@@ -930,7 +1075,6 @@ def main():
                     save_counter = 0
                 j += 1
 
-        # ---- Slice finished -> save + next account ----
         save_state()
         client.disconnect()
 
@@ -965,11 +1109,12 @@ def main():
         os.remove(SESSION_FILE)
 
     print(f'\n{_s}{_lg} All sessions closed.{_n}')
+    return 0
 
 
 if __name__ == '__main__':
     try:
-        main()
+        sys.exit(main())
     except KeyboardInterrupt:
         print(f'\n{_e}{_r} Stopped by user.')
         print(f'{_i}{_lg} Session saved — you can continue next time!{_n}')
